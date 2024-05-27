@@ -148,7 +148,19 @@ public class ProfissionalDao {
             e.printStackTrace();
         }
         return registrosAfetados;
-}
+    }
+    public int delete(Profissional objeto){
+        int registrosAfetados = 0;
+        String sql = "DELETE FROM profissional WHERE id = ?";
+        try {
+            ps = conexao.prepareStatement(sql);
+            ps.setLong(1, objeto.getId());
+            registrosAfetados = ps.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return registrosAfetados;
+    }
 
 
     
