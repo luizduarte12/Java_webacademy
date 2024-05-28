@@ -123,44 +123,54 @@ public class ProfissionalDao implements IDao<Profissional>{
         }
         return registro;
     }
-    public List<Profissional> get(String termoBusca){
+    public List<Profissional> get(String termoBusca) {
         List<Profissional> registros = new ArrayList<>();
-        Profissional registro = new Profissional();
         String sql = "SELECT p.id, p.email, p.nome, p.registro_conselho, p.telefone, "
-               + "e.nome AS especialidade_nome, "
-               + "u.nome AS unidade_nome, u.endereco AS unidade_endereco "
-               + "FROM profissional p "
-               + "JOIN especialidade e ON p.especialidade_id = e.id "
-               + "JOIN unidade u ON p.unidade_id = u.id "
-               + "WHERE p.nome LIKE ?";
-        try {
-            ps = conexao.prepareStatement(sql);
-            ps.setString(1, "%" + termoBusca + "%");
-            rs = ps.executeQuery();
-                if(rs.next()){
+                   + "e.nome AS especialidade_nome, "
+                   + "u.nome AS unidade_nome, u.endereco AS unidade_endereco "
+                   + "FROM profissional p "
+                   + "JOIN especialidade e ON p.especialidade_id = e.id "
+                   + "JOIN unidade u ON p.unidade_id = u.id "
+                   + "WHERE p.nome LIKE ? "
+                   + "OR p.email LIKE ? "
+                   + "OR p.registro_conselho LIKE ? "
+                   + "OR p.telefone LIKE ? "
+                   + "OR e.nome LIKE ? "
+                   + "OR u.nome LIKE ? "
+                   + "OR u.endereco LIKE ?";
+        
+        try (PreparedStatement ps = conexao.prepareStatement(sql)) {
+            String searchPattern = "%" + termoBusca + "%";
+            for (int i = 1; i <= 7; i++) {
+                ps.setString(i, searchPattern);
+            }
+            
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Profissional registro = new Profissional();
                     registro.setId(rs.getLong("id"));
-                registro.setEmail(rs.getString("email"));
-                registro.setNome(rs.getString("nome"));
-                registro.setRegistro(rs.getString("registro_conselho"));
-                registro.setTelefone(rs.getString("telefone"));
-
-                Especialidade especialidade = new Especialidade();
-                especialidade.setNome(rs.getString("especialidade_nome"));
-                registro.setEspecialidade(especialidade);
+                    registro.setEmail(rs.getString("email"));
+                    registro.setNome(rs.getString("nome"));
+                    registro.setRegistro(rs.getString("registro_conselho"));
+                    registro.setTelefone(rs.getString("telefone"));
     
-                Unidade unidade = new Unidade();
-                unidade.setNome(rs.getString("unidade_nome"));
-                unidade.setEnderco(rs.getString("unidade_endereco"));
-                registro.setUnidade(unidade);
-
-                registros.add(registro);
-
+                    Especialidade especialidade = new Especialidade();
+                    especialidade.setNome(rs.getString("especialidade_nome"));
+                    registro.setEspecialidade(especialidade);
+    
+                    Unidade unidade = new Unidade();
+                    unidade.setNome(rs.getString("unidade_nome"));
+                    unidade.setEnderco(rs.getString("unidade_endereco"));
+                    registro.setUnidade(unidade);
+    
+                    registros.add(registro);
                 }
+            }
         } catch (SQLException e) {
             e.printStackTrace();
         }
         return registros;
-    }
+    }    
     public int insert(Profissional objeto){
         int registrosAfetados = 0;
         String sql = "INSERT INTO profissional (email, nome, registro_conselho, telefone, especialidade_id, unidade_id) VALUES (?, ?, ?, ?, ?, ?)";
