@@ -13,42 +13,72 @@ import br.ufac.sgcm.model.Especialidade;
 import br.ufac.sgcm.model.Profissional;
 import br.ufac.sgcm.model.Unidade;
 
-public class ProfissionalDao {
-    Connection conexao;
-    PreparedStatement ps;
-    ResultSet rs;
+public class ProfissionalDao implements IDao<Profissional>{
+    private Connection conexao;
+    private PreparedStatement ps;
+    private ResultSet rs;
+    private EspecialidadeDao eDao;
+    private UnidadeDao uDao;
 
     public ProfissionalDao(){
-        conexao = new ConexaoDB().getConexao();
+        conexao = ConexaoDB.getConexao();
     }
+    // public List<Profissional> get(){
+    //     List<Profissional> registros = new ArrayList<>();
+    //     String sql = "SELECT p.id, p.email, p.nome, p.registro_conselho, p.telefone, "
+    //                + "e.nome AS especialidade_nome, "
+    //                + "u.nome AS unidade_nome, u.endereco AS unidade_endereco "
+    //                + "FROM profissional p "
+    //                + "JOIN especialidade e ON p.especialidade_id = e.id "
+    //                + "JOIN unidade u ON p.unidade_id = u.id";
+    //     try{
+    //         ps = conexao.prepareStatement(sql);
+    //         rs = ps.executeQuery();
+    //         while(rs.next()){
+    //             Profissional registro = new Profissional();
+    //             registro.setId(rs.getLong("id"));
+    //             registro.setEmail(rs.getString("email"));
+    //             registro.setNome(rs.getString("nome"));
+    //             registro.setRegistro(rs.getString("registro_conselho"));
+    //             registro.setTelefone(rs.getString("telefone"));
+    
+    //             Especialidade especialidade = new Especialidade();
+    //             especialidade.setNome(rs.getString("especialidade_nome"));
+    //             registro.setEspecialidade(especialidade);
+    
+    //             Unidade unidade = new Unidade();
+    //             unidade.setNome(rs.getString("unidade_nome"));
+    //             unidade.setEnderco(rs.getString("unidade_endereco"));
+    //             registro.setUnidade(unidade);
+    
+    //             registros.add(registro);
+    //         }
+    //     } catch(SQLException e){
+    //         e.printStackTrace();
+    //     }
+    //     return registros;
+
+        
+    // }
+
     public List<Profissional> get(){
         List<Profissional> registros = new ArrayList<>();
-        String sql = "SELECT p.id, p.email, p.nome, p.registro_conselho, p.telefone, "
-                   + "e.nome AS especialidade_nome, "
-                   + "u.nome AS unidade_nome, u.endereco AS unidade_endereco "
-                   + "FROM profissional p "
-                   + "JOIN especialidade e ON p.especialidade_id = e.id "
-                   + "JOIN unidade u ON p.unidade_id = u.id";
-        try{
+        String sql = "SELECT * from profissional";
+        try {
             ps = conexao.prepareStatement(sql);
             rs = ps.executeQuery();
-            while(rs.next()){
+            while (rs.next()) {
                 Profissional registro = new Profissional();
                 registro.setId(rs.getLong("id"));
-                registro.setEmail(rs.getString("email"));
                 registro.setNome(rs.getString("nome"));
+                registro.setEmail(rs.getString("email"));
                 registro.setRegistro(rs.getString("registro_conselho"));
                 registro.setTelefone(rs.getString("telefone"));
-    
-                Especialidade especialidade = new Especialidade();
-                especialidade.setNome(rs.getString("especialidade_nome"));
-                registro.setEspecialidade(especialidade);
-    
-                Unidade unidade = new Unidade();
-                unidade.setNome(rs.getString("unidade_nome"));
-                unidade.setEnderco(rs.getString("unidade_endereco"));
-                registro.setUnidade(unidade);
-    
+                eDao = new EspecialidadeDao();
+                registro.setEspecialidade(eDao.get(rs.getLong("especialidade_id")));
+                uDao = new UnidadeDao();
+                Unidade u = uDao.get(rs.getLong("unidade_id"));
+                registro.setUnidade(u);
                 registros.add(registro);
             }
         } catch(SQLException e){
@@ -148,8 +178,27 @@ public class ProfissionalDao {
             e.printStackTrace();
         }
         return registrosAfetados;
-    }
-    public int delete(Profissional objeto){
+   }
+   public int update(Profissional objeto){
+        int registrosAfetados = 0;
+        String sql = "UPDATE profissional SET email = ?, nome = ?, registro_conselho = ?, telefone = ?, especialidade_id = ?, unidade_id = ? WHERE id = ?";
+        try {
+            ps = conexao.prepareStatement(sql);
+            ps.setString(1, objeto.getEmail());
+            ps.setString(2, objeto.getNome());
+            ps.setString(3, objeto.getRegistro());
+            ps.setString(4, objeto.getTelefone());
+            ps.setLong(5, objeto.getEspecialidade().getId()); 
+            ps.setLong(6, objeto.getUnidade().getId());
+            ps.setLong(7, objeto.getId());
+            registrosAfetados = ps.executeUpdate();
+        }catch(SQLException e){
+            e.printStackTrace();
+
+        }
+        return registrosAfetados;
+   }
+   public int delete(Profissional objeto){
         int registrosAfetados = 0;
         String sql = "DELETE FROM profissional WHERE id = ?";
         try {
@@ -161,7 +210,5 @@ public class ProfissionalDao {
         }
         return registrosAfetados;
     }
-
-
     
 }
